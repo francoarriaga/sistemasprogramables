@@ -1,0 +1,102 @@
+
+import network
+import usocket
+import time
+import urequests  # Librería para hacer solicitudes HTTP
+
+# Reemplaza con la URL de tu webhook
+webhook_url = "https://webhook.site/a3036eae-76eb-4123-854b-c2323161015d"
+
+# Reemplaza con tus credenciales de Wi-Fi
+ssid = 'Galaxy_A55_5G_E52A'
+password = 'frank.10'
+
+# Conectar a Wi-Fi
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(ssid, password)
+    while not wlan.isconnected():
+        print('Connecting to WiFi...')
+        time.sleep(1)
+    print('Connected to WiFi')
+    print(wlan.ifconfig())
+
+# Función para obtener el nombre del servicio basado en el puerto
+def get_service_name(port):
+    service_names = {
+        21: "FTP",
+        22: "SSH",
+        23: "Telnet",
+        25: "SMTP",
+        53: "DNS",
+        80: "HTTP",
+        110: "POP3",
+        143: "IMAP",
+        443: "HTTPS",
+        445: "SMB (Windows shares)",
+        3306: "MySQL",
+        8080: "HTTP Alternate",
+    }
+    return service_names.get(port, "Unknown")
+
+# Función para imprimir la tabla
+def print_table(ports):
+    print(f"{'Port':<10}{'Service Name':<20}")
+    print("-" * 30)
+    for entry in ports:
+        print(f"{entry['port']:<10}{entry['service']:<20}")
+
+# Función para enviar los datos al webhook
+def send_to_webhook(data):
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = urequests.post(webhook_url, json=data, headers=headers)
+        if response.status_code == 200:
+            print("Datos enviados correctamente al webhook.")
+        else:
+            print(f"Error al enviar datos al webhook. Código de estado: {response.status_code}")
+        response.close()
+    except Exception as e:
+        print(f"Error al enviar los datos: {str(e)}")
+
+# Función para escanear puertos en una IP objetivo
+def scan_ports(target_ip, start_port, end_port):
+    open_ports = []  # Lista para almacenar puertos abiertos
+    print(f"Scanning ports from {start_port} to {end_port} on {target_ip}...")
+    
+    for port in range(start_port, end_port + 1):
+        sock = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
+        sock.settimeout(2)  # Aumentar timeout a 2 segundos
+        try:
+            sock.connect((target_ip, port))
+            service_name = get_service_name(port)  # Obtener el nombre del servicio
+            open_ports.append({"port": port, "service": service_name})  # Almacenar puerto abierto y servicio
+            print(f"Port {port} is open - Service: {service_name}")  # Imprimir el puerto abierto conforme se detecta
+        except OSError:
+            print(f"Port {port} is closed")  # Imprimir cuando un puerto está cerrado
+        finally:
+            sock.close()
+        time.sleep(0.1)  # Añadir una pequeña pausa entre cada escaneo
+
+    # Si se encontraron puertos abiertos, enviarlos al webhook y mostrar la tabla
+    if open_ports:
+        print_table(open_ports)  # Imprimir tabla de puertos abiertos
+        send_to_webhook({"target_ip": target_ip, "open_ports": open_ports})
+    else:
+        print("No se encontraron puertos abiertos.")
+        send_to_webhook({"target_ip": target_ip, "open_ports": []})
+
+# Código principal
+connect_wifi()  # Conectar a Wi-Fi primero
+
+# Establecer la dirección IP objetivo (cambia esto a la IP del host que deseas escanear)
+target_ip = '192.168.104.44'  # Asegúrate de que esta IP sea alcanzable
+
+# Escanear puertos del 1 al 500 como prueba
+start_port = 1
+end_port = 50
+
+# Realizar el escaneo de puertos
+scan_ports(target_ip, start_port, end_port)
+
